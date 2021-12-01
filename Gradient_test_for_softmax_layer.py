@@ -25,20 +25,20 @@ def get_Y_swissroll(num_examples):
 
 
 def derivative_softmax_wrt_w(X, W, b, c): # need this for the gradient test, goes into backprob
-    print(f"last_update_2021_11_30_19_38 derivative_softmax_wrt_w")
+    print(f"last_update_2021_12_01_15_16 derivative_softmax_wrt_w")
     print(f"derivative_softmax_wrt_w: shape_check: W shape {W.shape}")
     print(f"derivative_softmax_wrt_w: shape_check: X shape {X.shape}")
     print(f"derivative_softmax_wrt_w: shape_check: b shape {b.shape}")
     print(f"derivative_softmax_wrt_w: shape_check: c shape {c.shape}")
     m = c.shape[1]
     # z = softmax_f2(X, W)
-    z = softmax_with_CE_loss(X, W, b, c)
+    z = softmax_with_CE_loss_no_mean(X, W, b, c)
     print(f"derivative_softmax_wrt_w: shape_check: z shape {z.shape}")
     return (1 / m) * X.T @ (z - c)
 
 
 def derivative_softmax_wrt_x(X, W, b, c):
-    print(f"last_update_2021_11_26_17_17 derivative_softmax_wrt_x")
+    print(f"last_update_2021_12_01_15_1 derivative_softmax_wrt_x")
     print(f"derivative_softmax_wrt_x: shape_check: W shape {W.shape}")
     print(f"derivative_softmax_wrt_x: shape_check: X shape {X.shape}")
     print(f"derivative_softmax_wrt_x: shape_check: b shape {b.shape}")
@@ -46,7 +46,7 @@ def derivative_softmax_wrt_x(X, W, b, c):
 
     m = c.shape[1]
     print(f"derivative_softmax_wrt_x: m num of examples = {m}")
-    z = softmax_f2(X, W, b)
+    z = softmax_with_CE_loss_no_mean(X, W, b, c)
     return (1 / m) * W.T @ (z - c)
 
     # layer_output = W@X + b
@@ -67,8 +67,8 @@ def softmax_f2(X, W):
 
 
 
-def softmax_with_CE_loss(X, W, b, y_true):
-    print(f"last_update_2021_11_30_19_30 softmax_with_CE_loss")
+def softmax_with_CE_loss_w_mean(X, W, b, y_true):
+    print(f"last_update_2021_12_01_15_15 softmax_with_CE_loss")
     V = (X.T @ W) + b
     print(f"softmax_with_CE_loss: shape_check: V shape {V.shape}")
     # b_T = b.T
@@ -85,6 +85,25 @@ def softmax_with_CE_loss(X, W, b, y_true):
     print(f"softmax_with_CE_loss: shape_check: negative_log_likeliihood shape {negative_log_likeliihood.shape}")
     return np.mean(negative_log_likeliihood)
 
+def softmax_with_CE_loss_no_mean(X, W, b, y_true):
+    print(f"last_update_2021_12_01_15_15 softmax_with_CE_loss")
+    V = (X.T @ W) + b
+    print(f"softmax_with_CE_loss: shape_check: V shape {V.shape}")
+    # b_T = b.T
+    # V2 = V[:,]+b_T
+    # print(f"softmax_f: shape_check: V2 shape {V2.shape}")
+    exp_values = np.exp(V - np.max(V, axis=1, keepdims=True))
+    print(f"softmax_with_CE_loss: shape_check: exp_values shape {exp_values.shape}")
+    # return exp_values / np.sum(exp_values, axis=1, keepdims=True)
+    y_pred = exp_values / np.sum(exp_values, axis=1, keepdims=True)
+    y_pred_clipped = np.clip(y_pred, 1e-7, 1 - 1e-7)
+    correct_confidences = np.sum(y_pred_clipped * y_true.T, axis=1)
+    print(f"softmax_with_CE_loss: shape_check: correct_confidences shape {correct_confidences.shape}")
+    negative_log_likeliihood = -np.log(correct_confidences)
+    print(f"softmax_with_CE_loss: shape_check: negative_log_likeliihood shape {negative_log_likeliihood.shape}")
+    return negative_log_likeliihood
+    # return np.mean(negative_log_likeliihood)
+
     # Z = self.activation(self.v)
     # return self.Z
     # return np.tanh((W@X) +b)
@@ -99,7 +118,7 @@ def softmax_with_CE_loss(X, W, b, y_true):
 #     return dx, dw, db
 
 def do_gradient_test_for_softmax_layer():
-
+    print(f"last_update_2021_12_01_15_19 do_gradient_test_for_softmax_layer")
     input_size = 2  # we give x with dim 2 at the input
     output_size = 2  # two class at the last layer
     num_examples = 2
@@ -128,17 +147,20 @@ def do_gradient_test_for_softmax_layer():
     # print(f"np.vdot(softmax_f return: shape_check: g0 shape {g0.shape}")
     # print(f"g0 is {g0}")
     # F0 = softmax_f2(X, W)
-    F0 = softmax_with_CE_loss(X, W, b, c)
+    F0 = softmax_with_CE_loss_w_mean(X, W, b, c)  # loss function evaluated at X
 
     print(f"np.vdot(softmax_f return: shape_check: F0 shape {F0.shape}")
     print(f"F0 is {F0}")
     # grad_X, grad_W, grad_b = grad_g(X,W,b,u)
-    grad_W = derivative_softmax_wrt_w(X, W, b, c)
-    print(f"derivative_softmax_wrt_w return: shape_check: grad_W shape {grad_W.shape}")
+    # grad_W = derivative_softmax_wrt_w(X, W, b, c)
+    # print(f"derivative_softmax_wrt_w return: shape_check: grad_W shape {grad_W.shape}")
+    grad_X = derivative_softmax_wrt_x(X, W, b, c)
+    print(f"derivative_softmax_wrt_x return: shape_check: grad_W shape {grad_X.shape}")
+
     y0 = []
     y1 = []
     for i in range(8):
-        epsk = epsilon * (0.5 ** i)
+        epsk = epsilon * (0.5 ** i)  # added noise
         # gk = np.vdot(softmax_f(X+epsk*d,W,b),u)
         # SM = softmax_f(X + epsk * d, W, b, c)
         # print(f"softmax_f return: shape_check: softmax_f shape {SM.shape}")
@@ -146,7 +168,7 @@ def do_gradient_test_for_softmax_layer():
         # gk = SM
         # Fk = F(x+epsk*d); Eran's code
         # Fk = softmax_f2(X + epsk * d, W)
-        Fk = softmax_with_CE_loss(X + epsk * d, W, b, c)
+        Fk = softmax_with_CE_loss_w_mean(X + epsk * d, W, b, c)  # loss function evaluated at X + noise
 
         print(f"softmax_with_CE_loss return: shape_check: Fk shape {Fk.shape}")
         print(f"softmax_with_CE_loss return: Fk  {Fk}")
@@ -158,7 +180,8 @@ def do_gradient_test_for_softmax_layer():
         # Fk = F0 - np.vdot(grad_X, d*epsk)
         # Fk = F0 - np.vdot(grad_W, d * epsk)  # Fk_minus_F1
         # F1 = F0 + epsk*dot(g0,d); Eran's code
-        F1 = F0 + np.vdot(grad_W, d * epsk)
+        # F1 = F0 + np.vdot(grad_W, d * epsk)  # loss function evaluated at X + gradient of loss function wrt w
+        F1 = F0 + np.vdot(grad_X, d * epsk)  # loss function evaluated at X + gradient of loss function wrt x
         print(f"softmax_with_CE_loss return: shape_check: F1 shape {F1.shape}")
         print(f"softmax_with_CE_loss return:  F1  {F1}")
         Fk_minus_F1 = Fk - F1  # Fk_minus_F1
@@ -174,16 +197,16 @@ def do_gradient_test_for_softmax_layer():
 
     print('matplotlib: {}'.format(matplotlib.__version__))
 
-    y0_fake = [10,100,100,1000,10000]
-    y1_fake = [40,400,400,4000,40000]
+    # y0_fake = [10,100,100,1000,10000]
+    # y1_fake = [40,400,400,4000,40000]
     x_axis = np.arange(1,9,1)
     x_axis_fake = np.arange(1,6,1)
     # print(f"x_axis shape = {x_axis.shape}")
     plt.figure(figsize=(8, 6))
-    # plt.semilogy(x_axis,y0)
-    # plt.semilogy(x_axis,y1)
-    plt.semilogy(y0_fake, label=r"Zero order approx")
-    plt.plot(y1_fake, label=r"First order approx")
+    plt.semilogy(x_axis,y0)
+    plt.semilogy(x_axis,y1)
+    # plt.semilogy(y0_fake, label=r"Zero order approx")
+    # plt.plot(y1_fake, label=r"First order approx")
     # plt.semilogy(x_axis_fake,y0_fake)
     # plt.semilogy(x_axis_fake,y1_fake)
     # plt.legend(("Zero order approx","First order approx"))
