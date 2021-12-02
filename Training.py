@@ -31,6 +31,7 @@ class Train:
     def __init__(self):
         self.input_dim = None
         self.number_of_classes = None
+        self.error_list = []
 
     # def train_softmax_classifier_only(self, x, y, num_of_examples, dataset_type):
     #
@@ -83,7 +84,7 @@ class Train:
     #         # dscores[range(num_examples),y.astype(int)] -= 1
     #         # dscores /= num_examples
     #         #
-    #         # # backpropate the gradient to the parameters (W,b)
+    #         # # backprop the gradient to the parameters (W,b)
     #         # dW = np.dot(X.T, dscores)
     #         # db = np.sum(dscores, axis=0, keepdims=True)
     #         #
@@ -173,14 +174,19 @@ class Train:
     #     print(f"last_update_2021_11_24_10_14 StochasticGradientDescentMomentum")
 
     # function to create a list containing mini-batches
-    def create_mini_batches(X, y, batch_size):
+    def create_mini_batches(self, X, y, batch_size):
+        print(f"last_update_2021_12_02_21_20 create_mini_batches")
         mini_batches = []
-        data = np.hstack((X, y))
+        print(f"X shape {X.shape}")
+        print(f"y shape {y.shape}")
+        print(f"batch_size {batch_size}")
+        data = np.hstack((X, y.reshape(X.shape[0],1)))
         np.random.shuffle(data)
         n_minibatches = data.shape[0] // batch_size
         i = 0
 
-        for i in range(n_minibatches + 1):
+        # for i in range(n_minibatches + 1):
+        for i in range(n_minibatches):
             mini_batch = data[i * batch_size:(i + 1)*batch_size, :]
             X_mini = mini_batch[:, :-1]
             Y_mini = mini_batch[:, -1].reshape((-1, 1))
@@ -192,18 +198,66 @@ class Train:
             mini_batches.append((X_mini, Y_mini))
         return mini_batches
 
-    def SGD(self, data_x, data_y, model, epochs, mini_batch_size, eta, mode=1):
-        step_size = 1e-0
+    def SGD(self, data_x, data_y, model, epochs, mini_batch_size, model_hyper_parameters, mode=1):
+        print(f"last_update_2021_12_02_21_12 SGD")
+
+        print(f"SGD:model name {model.name()}")
+
+        lr_step_size = 1e-0
         reg = 1e-3  # regularization strength
+        print(f"SGD:model model_hyper_parameters {model_hyper_parameters}")
+        model.update_model_hyper_parameters(model_hyper_parameters)
 
         for j in range(epochs):
             mini_batches = self.create_mini_batches(data_x, data_y, mini_batch_size)
+            print(f"CHECK_ME_004 mini_batches {mini_batches}")
             for mini_batch in mini_batches:
                 X_mini, y_mini = mini_batch
+                print(f"CHECK_ME_003 X_mini shape{X_mini.shape}")
+                print(f"y_mini shape{y_mini.shape}")
                 #forward
+                # For the forward we need to that X_mini shape will be X_examples laying horizontally!
+                if X_mini.shape[0]>X_mini.shape[1]:
+                    print(f"X_mini shape is with X_examples laying horizontally! - GOOD")
+                model.forward(X_mini, y_mini)
+                model_gradient = model.gradient()
+                print(f"model_gradient = {model_gradient}")
+                print(f"model_gradient shape{model_gradient.shape}")
+                mini_batch_loss = model.loss()
+                print(f"mini_batch_loss = {mini_batch_loss}")
+                print(f"mini_batch_loss shape{mini_batch_loss.shape}")
+
+
                 #backward
-                theta = theta - learning_rate * model.gradient(X_mini, y_mini, theta)
-                error_list.append(cost(X_mini, y_mini, theta))
+
+                #update model_hyper_parameters
+                # perform a parameter update
+                dW, db = np.hsplit(model_gradient, [model_gradient.shape[1]-1])
+                print(f"CHECK_ME_001 model_hyper_parameters = {model_hyper_parameters}")
+                print(f"model_hyper_parameters shape{model_hyper_parameters.shape}")
+                W, b = np.hsplit(model_hyper_parameters, [model_hyper_parameters.shape[1]-1])
+
+                print(f"dW = {dW}")
+                print(f"dW shape{dW.shape}")
+                print(f"db = {db}")
+                print(f"db shape{db.shape}")
+
+                print(f"W = {W}")
+                print(f"W shape{W.shape}")
+                print(f"b = {b}")
+                print(f"b shape{b.shape}")
+
+                W += -lr_step_size * dW
+                b += -lr_step_size * db
+                # model_hyper_parameters = model_hyper_parameters - lr_step_size * model.gradient(X_mini, y_mini, theta)
+                model_hyper_parameters = grad = np.concatenate((W, b), axis=1)
+
+                print(f"model_hyper_parameters = {model_hyper_parameters}")
+                print(f"model_hyper_parameters shape{model_hyper_parameters.shape}")
+
+                model.update_model_hyper_parameters(model_hyper_parameters)
+
+                self.error_list.append(mini_batch_loss)
 
 
 

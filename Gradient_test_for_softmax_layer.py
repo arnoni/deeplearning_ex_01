@@ -83,6 +83,7 @@ def do_gradient_test_for_softmax_layer():
 
     # grad_X = derivative_softmax_wrt_x(X, W, b, c)  # gradient wrt X
     grad_X = derivative_softmax_wrt_x_fix(X, W, b, c)  # gradient wrt X
+    print(f"grad_X = {grad_X}")
 
     y0 = []
     y1 = []

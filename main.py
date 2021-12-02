@@ -1,6 +1,12 @@
 # This is a sample Python script.
 # from test_class import test1
 # from test_class import test2
+import matplotlib.pyplot as plt
+
+from Classifier import SoftmaxClassifier
+from FullyConnectedNeuralNetwork import last_layer
+from Gradient_Test_for_a_single_layer import do_jacobian_test_for_dense_layer
+from Gradient_test_for_softmax_layer import do_gradient_test_for_softmax_layer
 from Utils import Utils
 from Training import Train as Tr
 # from FullyConnectedNeuralNetwork import DenseNet
@@ -58,6 +64,9 @@ def loadAllData():
 # Press the green button in the gutter to run the script.
 
 
+
+
+
 if __name__ == '__main__':
 
     print(f"Start of Ex1, last_update_2021_11_12_01_56")
@@ -96,18 +105,72 @@ if __name__ == '__main__':
     print(f"main: type(y)  {type(y)}")
 
 
+    # x = range(100)
+    # y = range(100,200)
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(111)
+    #
+    # ax1.scatter(x[:4], y[:4], s=10, c='b', marker="s", label='first')
+    # ax1.scatter(x[40:],y[40:], s=10, c='r', marker="o", label='second')
+    # plt.legend(loc='upper left');
+    # plt.show()
+
+    # y0_fake = [10,100,100,1000,10000]
+    # y1_fake = [40,400,400,4000,40000]
+    # x_axis = np.arange(1,9,1)
+    # x_axis_fake = np.arange(1,6,1)
+    # # print(f"x_axis shape = {x_axis.shape}")
+    # plt.figure(figsize=(8, 6))
+    # # plt.semilogy(x_axis,y0)
+    # # plt.semilogy(x_axis,y1)
+    # plt.semilogy(y0_fake, label=r"Zero order approx")
+    # plt.plot(y1_fake, label=r"First order approx")
+    # # plt.semilogy(x_axis_fake,y0_fake)
+    # # plt.semilogy(x_axis_fake,y1_fake)
+    # # plt.legend(("Zero order approx","First order approx"))
+    # # plt.title("Successful Grad test in semilogarithmic plot")
+    # # plt.xlabel("k");
+    # # plt.ylabel("error");
+    # plt.show()
+
+
     # Gradient test for softmax layer:
-    print(f"main: 2.1.1 Gradient test for softmax layer and plot graph:")
+    print(f"main: 2.1.1 Gradient test for softmax layer and plot graph: - DEV_PHASE: CLEAN_UP")
+    #do_gradient_test_for_softmax_layer()
     # Run SGD on a small least squares example:
     print(f"main: 2.1.2 run SGD on softmax layer for a small least squares example and plot graph:")
-    # Run SGD on softmax layer for Swissroll and GMM datasets:
+    util_Inst2 = Utils()
+    ls_dataset_x, ls_dataset_y = util_Inst2.generate_LS_data_simple(200, 2, 0.5)
+    ls_dataset_train_x, ls_dataset_test_x = np.split(ls_dataset_x, [180])
+    ls_dataset_train_y, ls_dataset_test_y = np.split(ls_dataset_y, [180])
+
+    trainer_LS = Tr()
+    ls_dataset_num_classes = 2
+    inputs_neurons_to_last_layer = 2
+    model_softmax = last_layer("softmax",inputs_neurons_to_last_layer,ls_dataset_num_classes)
+
+    # W = 0.10 * np.random.randn(n_inputs, num_classes_output)
+    # b = np.random.randn(num_classes_output, 1)
+
+    W = 0.10 * np.random.randn(inputs_neurons_to_last_layer, ls_dataset_num_classes)
+    print(f"main - check shape W {W.shape}")
+    print(f"main - check type W {type(W)}")
+    b = np.random.randn(ls_dataset_num_classes, 1)
+    print(f"main - check shape b {b.shape}")
+    print(f"main - check type b {type(b)}")
+    # model_hyper_parameters = np.empty()
+    model_hyper_parameters = np.concatenate((W,b),axis=1)
+ # np.concatenate(W,b.T])
+    trainer_LS.SGD(ls_dataset_train_x,ls_dataset_train_y, model_softmax, epochs=2, mini_batch_size=10, model_hyper_parameters =model_hyper_parameters, mode=1)
+
+# Run SGD on softmax layer for Swissroll and GMM datasets:
     print(f"main: 2.1.3 run SGD on softmax layer for Swissroll and GMM datasets with various configuration and plot best graph:")
 
     # Construct a FC NN:
     print(f"main: 2.2.1 1. Construct a FC NN:")
     # Jacobian test for FC layer:
     print(f"main: 2.2.1 2. Jacobian test for 1 FC layer and plot graph:")
-
+    #do_jacobian_test_for_dense_layer()
     # Construct a ResNet NN:
     print(f"main: 2.2.2 1. Construct a ResNet NN:")
     # Jacobian test for ResNet layer:
